@@ -175,7 +175,9 @@ class GpuExportRenderer(private val context: Context) {
             GLES30.glTexParameteri(GLES30.GL_TEXTURE_3D, GLES30.GL_TEXTURE_WRAP_S, GLES30.GL_CLAMP_TO_EDGE)
             GLES30.glTexParameteri(GLES30.GL_TEXTURE_3D, GLES30.GL_TEXTURE_WRAP_T, GLES30.GL_CLAMP_TO_EDGE)
             GLES30.glTexParameteri(GLES30.GL_TEXTURE_3D, GLES30.GL_TEXTURE_WRAP_R, GLES30.GL_CLAMP_TO_EDGE)
-            GLES30.glTexImage3D(GLES30.GL_TEXTURE_3D, 0, GLES30.GL_RGB, 
+            // Use GL_RGB16F for MediaTek/Mali GPU compatibility
+            // Mali requires sized internal format for float texture linear filtering
+            GLES30.glTexImage3D(GLES30.GL_TEXTURE_3D, 0, GLES30.GL_RGB16F, 
                 it.size, it.size, it.size, 0, GLES30.GL_RGB, GLES30.GL_FLOAT, it.data)
         }
         

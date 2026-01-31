@@ -20,6 +20,7 @@
 
         <!-- Top Bar with Glass Effect -->
         <FrameLayout
+            android:id="@+id/topBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingHorizontal="16dp"
@@ -223,7 +224,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="調整"
+                    android:text="グレイン"
                     android:textColor="@color/accent_primary"
                     android:textSize="12sp"
                     android:letterSpacing="0.15"
@@ -239,7 +240,7 @@
 
             </LinearLayout>
 
-            <!-- Sliders Panel (Collapsible Content) -->
+            <!-- Sliders Panel (Collapsible Content) - Grain Controls Only -->
             <LinearLayout
                 android:id="@+id/sliderPanel"
                 android:layout_width="match_parent"
@@ -247,53 +248,6 @@
                 android:orientation="vertical"
                 android:paddingBottom="20dp"
                 android:visibility="gone">
-
-                <!-- Intensity -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingVertical="6dp">
-
-                    <ImageView
-                        android:id="@+id/intensityIcon"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_opacity"
-                        app:tint="@color/accent_primary"
-                        android:layout_marginEnd="12dp" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="強度"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp"
-                        android:fontFamily="sans-serif" />
-
-                    <TextView
-                        android:id="@+id/intensityValue"
-                        android:layout_width="48dp"
-                        android:layout_height="wrap_content"
-                        android:text="100%"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:gravity="end"
-                        android:fontFamily="sans-serif-medium" />
-                </LinearLayout>
-
-                <SeekBar
-                    android:id="@+id/intensitySlider"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    android:max="100"
-                    android:progress="100"
-                    android:progressTint="@color/accent_primary"
-                    android:thumbTint="@color/accent_primary"
-                    android:progressBackgroundTint="#40FFFFFF" />
 
                 <!-- Grain -->
                 <LinearLayout
@@ -400,6 +354,61 @@
                 android:clipToPadding="false"
                 android:scrollbars="none"
                 android:layout_marginBottom="20dp" />
+
+            <!-- Quick Intensity Slider (Always Visible when LUT selected) -->
+            <LinearLayout
+                android:id="@+id/quickIntensityPanel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:paddingBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="4dp">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_opacity"
+                        app:tint="@color/accent_primary"
+                        android:layout_marginEnd="10dp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="強度"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp"
+                        android:fontFamily="sans-serif" />
+
+                    <TextView
+                        android:id="@+id/quickIntensityValue"
+                        android:layout_width="44dp"
+                        android:layout_height="wrap_content"
+                        android:text="100%"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp"
+                        android:gravity="end"
+                        android:fontFamily="sans-serif-medium" />
+                </LinearLayout>
+
+                <SeekBar
+                    android:id="@+id/quickIntensitySlider"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:max="100"
+                    android:progress="100"
+                    android:progressTint="@color/accent_primary"
+                    android:thumbTint="@color/accent_primary"
+                    android:progressBackgroundTint="#40FFFFFF" />
+
+            </LinearLayout>
 
             <!-- Presets Section -->
             <TextView

@@ -65,8 +65,6 @@ class MainActivity : ComponentActivity() {
     private lateinit var sliderPanel: LinearLayout
     private lateinit var adjustmentHeader: LinearLayout
     private lateinit var adjustmentToggle: ImageView
-    private lateinit var intensitySlider: SeekBar
-    private lateinit var intensityValue: TextView
     
     private lateinit var prefs: SharedPreferences
     
@@ -74,6 +72,15 @@ class MainActivity : ComponentActivity() {
     private var savePath = "Pictures/FilmSims"
     private var saveQuality = 100
     private var isAdjustmentPanelExpanded = true
+    
+    // Immersive mode and before/after
+    private var isImmersiveMode = false
+    private var isShowingOriginal = false
+    private lateinit var topBar: View
+    private lateinit var controlPanel: LinearLayout
+    private lateinit var quickIntensityPanel: LinearLayout
+    private lateinit var quickIntensitySlider: SeekBar
+    private lateinit var quickIntensityValue: TextView
     
     // Store original image data for full-resolution export
     private var originalImageUri: Uri? = null
@@ -223,32 +230,66 @@ class MainActivity : ComponentActivity() {
                 resetZoom()
                 return true
             }
+            
+            override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                if (originalBitmap != null) {
+                    toggleImmersiveMode()
+                }
+                return true
+            }
+            
+            override fun onLongPress(e: MotionEvent) {
+                if (originalBitmap != null && currentLutPath != null) {
+                    showOriginalImage()
+                }
+            }
         })
 
         scaleGestureDetector = ScaleGestureDetector(this, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            private var lastFocusX = 0f
+            private var lastFocusY = 0f
+
+            override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+                lastFocusX = detector.focusX
+                lastFocusY = detector.focusY
+                return true
+            }
+
             override fun onScale(detector: ScaleGestureDetector): Boolean {
-                // Slight sensitivity boost (1.2x)
-                val delta = detector.scaleFactor - 1.0f
-                val amplifiedScale = 1.0f + delta * 1.2f
-                
+                val scaleFactor = detector.scaleFactor
                 val focusX = detector.focusX
                 val focusY = detector.focusY
 
-                transformMatrix.postScale(amplifiedScale, amplifiedScale, focusX, focusY)
-
-                // Limit scale
+                // Get current scale BEFORE applying new transform
                 transformMatrix.getValues(matrixValues)
                 val currentScale = matrixValues[Matrix.MSCALE_X]
 
-                if (currentScale < 0.5f) {
-                    val correction = 0.5f / currentScale
-                    transformMatrix.postScale(correction, correction, focusX, focusY)
-                } else if (currentScale > 10.0f) {
-                    val correction = 10.0f / currentScale
-                    transformMatrix.postScale(correction, correction, focusX, focusY)
+                // Calculate what the new scale would be
+                val newScale = currentScale * scaleFactor
+
+                // PAN: Calculate movement of the focal point
+                val dx = focusX - lastFocusX
+                val dy = focusY - lastFocusY
+
+                // Check if scale would be within bounds and significantly different from 1.0
+                val canScale = newScale >= 0.5f && newScale <= 10.0f && kotlin.math.abs(scaleFactor - 1.0f) > 0.001f
+
+                if (canScale) {
+                    // Apply scale FIRST around the focal point
+                    transformMatrix.postScale(scaleFactor, scaleFactor, focusX, focusY)
                 }
 
+                // Then apply pan (always allow panning during pinch)
+                transformMatrix.postTranslate(dx, dy)
+
                 updateGLViewTransform()
+
+                // Update state for next frame / seamless transition
+                lastFocusX = focusX
+                lastFocusY = focusY
+                lastTouchX = focusX
+                lastTouchY = focusY
+
                 return true
             }
         })
@@ -259,32 +300,38 @@ class MainActivity : ComponentActivity() {
             
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
-                    lastTouchX = event.rawX
-                    lastTouchY = event.rawY
+                    lastTouchX = event.getX(0)
+                    lastTouchY = event.getY(0)
                     activePointerId = event.getPointerId(0)
                 }
                 MotionEvent.ACTION_MOVE -> {
+                    // Only pan if NOT scaling
                     if (!scaleGestureDetector.isInProgress && activePointerId != MotionEvent.INVALID_POINTER_ID) {
                         val pointerIndex = event.findPointerIndex(activePointerId)
                         if (pointerIndex >= 0) {
-                            val x = event.rawX
-                            val y = event.rawY
+                            val x = event.getX(pointerIndex)
+                            val y = event.getY(pointerIndex)
                             val dx = x - lastTouchX
                             val dy = y - lastTouchY
-                            
+
                             transformMatrix.postTranslate(dx, dy)
                             updateGLViewTransform()
-                            
+
                             lastTouchX = x
                             lastTouchY = y
                         }
                     } else if (scaleGestureDetector.isInProgress) {
-                        lastTouchX = event.rawX
-                        lastTouchY = event.rawY
+                        // While scaling, keep updating touch coordinates to the focus point
+                        // This ensures that if one finger is lifted, panning resumes smoothly
+                        lastTouchX = scaleGestureDetector.focusX
+                        lastTouchY = scaleGestureDetector.focusY
                     }
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     activePointerId = MotionEvent.INVALID_POINTER_ID
+                    if (isShowingOriginal) {
+                        restoreEditedImage()
+                    }
                 }
                 MotionEvent.ACTION_POINTER_UP -> {
                     val pointerIndex = event.actionIndex
@@ -292,8 +339,8 @@ class MainActivity : ComponentActivity() {
                     if (pointerId == activePointerId) {
                         val newPointerIndex = if (pointerIndex == 0) 1 else 0
                         if (newPointerIndex < event.pointerCount) {
-                            lastTouchX = event.rawX
-                            lastTouchY = event.rawY
+                            lastTouchX = event.getX(newPointerIndex)
+                            lastTouchY = event.getY(newPointerIndex)
                             activePointerId = event.getPointerId(newPointerIndex)
                         }
                     }
@@ -306,8 +353,15 @@ class MainActivity : ComponentActivity() {
         sliderPanel = findViewById(R.id.sliderPanel)
         adjustmentHeader = findViewById(R.id.adjustmentHeader)
         adjustmentToggle = findViewById(R.id.adjustmentToggle)
-        intensitySlider = findViewById(R.id.intensitySlider)
-        intensityValue = findViewById(R.id.intensityValue)
+        
+        // Immersive mode views
+        topBar = findViewById(R.id.topBar)
+        controlPanel = findViewById(R.id.controlPanel)
+        
+        // Quick intensity slider (always visible when LUT selected)
+        quickIntensityPanel = findViewById(R.id.quickIntensityPanel)
+        quickIntensitySlider = findViewById(R.id.quickIntensitySlider)
+        quickIntensityValue = findViewById(R.id.quickIntensityValue)
         
         // Setup collapsible adjustment panel
         adjustmentHeader.setOnClickListener {
@@ -346,12 +400,12 @@ class MainActivity : ComponentActivity() {
             saveHighResImage()
         }
         
-        // Setup intensity slider
-        intensitySlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        // Setup intensity slider (single quick slider above presets)
+        quickIntensitySlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 val intensity = progress / 100f
                 currentIntensity = intensity
-                intensityValue.text = "${progress}%"
+                quickIntensityValue.text = "${progress}%"
                 
                 glSurfaceView.queueEvent {
                     renderer.setIntensity(intensity)
@@ -476,6 +530,73 @@ class MainActivity : ComponentActivity() {
     private fun resetZoom() {
         transformMatrix.reset()
         updateGLViewTransform()
+    }
+    
+    private fun toggleImmersiveMode() {
+        isImmersiveMode = !isImmersiveMode
+        val duration = 200L
+        
+        if (isImmersiveMode) {
+            // Store heights before hiding
+            val topBarHeight = topBar.height.toFloat()
+            val controlPanelHeight = controlPanel.height.toFloat()
+            
+            // Hide both top bar and control panel
+            topBar.animate()
+                .alpha(0f)
+                .translationY(-topBarHeight)
+                .setDuration(duration)
+                .withEndAction { topBar.visibility = View.INVISIBLE }
+                .start()
+            controlPanel.animate()
+                .alpha(0f)
+                .translationY(controlPanelHeight)
+                .setDuration(duration)
+                .withEndAction { controlPanel.visibility = View.INVISIBLE }
+                .start()
+        } else {
+            // Show both - use INVISIBLE -> VISIBLE so heights are preserved
+            topBar.visibility = View.VISIBLE
+            controlPanel.visibility = View.VISIBLE
+            
+            topBar.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(duration)
+                .start()
+            controlPanel.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(duration)
+                .start()
+        }
+    }
+    
+    private fun showOriginalImage() {
+        if (isShowingOriginal) return
+        isShowingOriginal = true
+        
+        // Temporarily set intensity to 0 and disable grain to show original
+        glSurfaceView.queueEvent {
+            renderer.setIntensity(0f)
+            renderer.setGrainEnabled(false)
+            glSurfaceView.requestRender()
+        }
+    }
+    
+    private fun restoreEditedImage() {
+        if (!isShowingOriginal) return
+        isShowingOriginal = false
+        
+        // Restore to current intensity and grain settings
+        glSurfaceView.queueEvent {
+            renderer.setIntensity(currentIntensity)
+            renderer.setGrainEnabled(currentGrainEnabled)
+            if (currentGrainEnabled) {
+                renderer.setGrainIntensity(currentGrainIntensity)
+            }
+            glSurfaceView.requestRender()
+        }
     }
     
     private fun showSettingsDialog() {
@@ -619,12 +740,10 @@ class MainActivity : ComponentActivity() {
             }
             
             // Reset slider to 100%
-            intensitySlider.progress = 100
-            intensityValue.text = "100%"
+            quickIntensitySlider.progress = 100
+            quickIntensityValue.text = "100%"
             currentIntensity = 1f
             
-            // Reset zoom when changing LUT
-            resetZoom()
         }
         lutListView.adapter = lutAdapter
         
@@ -654,6 +773,17 @@ class MainActivity : ComponentActivity() {
                     renderer.setIntensity(currentIntensity)
                     renderer.setLut(lut)
                     glSurfaceView.requestRender()
+                }
+                // Show quick intensity panel
+                withContext(Dispatchers.Main) {
+                    if (quickIntensityPanel.visibility != View.VISIBLE) {
+                        quickIntensityPanel.visibility = View.VISIBLE
+                        quickIntensityPanel.alpha = 0f
+                        quickIntensityPanel.animate()
+                            .alpha(1f)
+                            .setDuration(200)
+                            .start()
+                    }
                 }
             } else {
                 withContext(Dispatchers.Main) {

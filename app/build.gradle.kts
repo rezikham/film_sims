@@ -13,8 +13,8 @@ android {
         applicationId = "com.tqmane.filmsim"
         minSdk = 33
         targetSdk = 34
-        versionCode = 2
-        versionName = "0.0.2-beta"
+        versionCode = 3
+        versionName = "0.0.3-beta"
     }
 
     buildTypes {

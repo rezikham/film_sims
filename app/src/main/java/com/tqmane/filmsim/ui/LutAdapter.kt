@@ -140,7 +140,16 @@ class LutAdapter(
         holder.textView.text = item.name
         
         // Set selected state on the card container (which has the selector background)
-        holder.cardContainer.isSelected = (position == selectedPosition)
+        val isSelected = (position == selectedPosition)
+        holder.cardContainer.isSelected = isSelected
+        
+        // Animate scale for selected state
+        val targetScale = if (isSelected) 1.05f else 1.0f
+        holder.itemView.animate()
+            .scaleX(targetScale)
+            .scaleY(targetScale)
+            .setDuration(150)
+            .start()
         
         holder.imageView.setImageDrawable(null)
         holder.imageView.setBackgroundColor(0xFF333333.toInt())

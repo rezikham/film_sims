@@ -22,6 +22,7 @@ data class LutBrand(
 object LutRepository {
     
     private val brandDisplayNames = mapOf(
+        "Nothing" to "Nothing",
         "OnePlus" to "OnePlus",
         "Xiaomi" to "Xiaomi"
     )
@@ -49,16 +50,24 @@ object LutRepository {
         "Vintage-Retro" to "ヴィンテージ・レトロ",
         "Warm Tones" to "ウォームトーン",
         // Xiaomi
-        "adjust" to "調整",
-        "color_highlight" to "ハイライト",
-        "color_shadow" to "シャドウ",
-        "dolby" to "Dolby",
-        "enhance" to "強調",
-        "film" to "フィルム",
-        "leica" to "Leica",
-        "onekey" to "ワンキー",
-        "popular" to "人気"
+        "Artistic" to "アーティスティック",
+        "Cinematic" to "シネマティック",
+        "Cool Tones" to "クールトーン",
+        "Film Simulation" to "フィルムシミュレーション",
+        "Japanese Style" to "日本風",
+        "Leica" to "Leica",
+        "Monochrome" to "モノクロ",
+        "Nature-Landscape" to "自然・風景",
+        "Portrait-Soft" to "ポートレート・ソフト",
+        "Special Effects" to "特殊効果",
+        "Vivid-Natural" to "ビビッド・ナチュラル",
+        "Warm-Vintage" to "ウォーム・ヴィンテージ",
+        // Nothing (flat structure - uses "All" as virtual category)
+        "_all" to "すべて"
     )
+    
+    // Supported LUT file extensions
+    private val lutExtensions = listOf(".cube", ".png", ".bin")
     
     fun getLutBrands(context: Context): List<LutBrand> {
         val assetManager = context.assets
@@ -70,19 +79,55 @@ object LutRepository {
             
             for (brandName in brandFolders) {
                 val brandPath = "$rootPath/$brandName"
-                val categoryFolders = assetManager.list(brandPath) ?: continue
+                val contents = assetManager.list(brandPath) ?: continue
                 
                 val categories = mutableListOf<LutCategory>()
+                
+                // Check if brand has flat structure (LUT files directly in brand folder)
+                val directLutFiles = contents.filter { file -> 
+                    lutExtensions.any { ext -> file.endsWith(ext, ignoreCase = true) }
+                }
+                
+                if (directLutFiles.isNotEmpty()) {
+                    // Flat structure (e.g., Nothing) - create a single "All" category
+                    val lutItems = directLutFiles.map { filename ->
+                        val name = lutExtensions.fold(filename) { acc, ext -> 
+                            acc.removeSuffix(ext).removeSuffix(ext.uppercase())
+                        }.replace("_", " ")
+                        LutItem(
+                            name = name,
+                            assetPath = "$brandPath/$filename"
+                        )
+                    }.sortedBy { it.name.lowercase() }
+                    
+                    categories.add(
+                        LutCategory(
+                            name = "_all",
+                            displayName = categoryDisplayNames["_all"] ?: "All",
+                            items = lutItems
+                        )
+                    )
+                }
+                
+                // Check for subdirectories (category folders)
+                val categoryFolders = contents.filter { name ->
+                    !lutExtensions.any { ext -> name.endsWith(ext, ignoreCase = true) }
+                }
                 
                 for (categoryName in categoryFolders) {
                     val categoryPath = "$brandPath/$categoryName"
                     val files = assetManager.list(categoryPath) ?: continue
                     
                     val lutItems = files
-                        .filter { it.endsWith(".cube", ignoreCase = true) }
+                        .filter { file -> 
+                            lutExtensions.any { ext -> file.endsWith(ext, ignoreCase = true) }
+                        }
                         .map { filename ->
+                            val name = lutExtensions.fold(filename) { acc, ext -> 
+                                acc.removeSuffix(ext).removeSuffix(ext.uppercase())
+                            }.replace("_", " ")
                             LutItem(
-                                name = filename.removeSuffix(".cube").removeSuffix(".CUBE").replace("_", " "),
+                                name = name,
                                 assetPath = "$categoryPath/$filename"
                             )
                         }
@@ -92,7 +137,7 @@ object LutRepository {
                         categories.add(
                             LutCategory(
                                 name = categoryName,
-                                displayName = categoryDisplayNames[categoryName] ?: categoryName.replace("_", " "),
+                                displayName = categoryDisplayNames[categoryName] ?: categoryName.replace("_", " ").replace("-", " - "),
                                 items = lutItems
                             )
                         )

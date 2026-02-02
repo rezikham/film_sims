@@ -119,10 +119,20 @@ object LutRepository {
                 
                 if (directLutFiles.isNotEmpty()) {
                     // Flat structure (e.g., Nothing) - create a single "All" category
-                    val lutItems = directLutFiles.map { filename ->
-                        val baseName = lutExtensions.fold(filename) { acc, ext -> 
+                    
+                    // Group by basename to handle duplicates (prefer .bin > .cube > .png)
+                    val groupedFiles = directLutFiles.groupBy { filename ->
+                        lutExtensions.fold(filename) { acc, ext -> 
                             acc.removeSuffix(ext).removeSuffix(ext.uppercase())
                         }
+                    }
+                    
+                    val lutItems = groupedFiles.map { (baseName, files) ->
+                        // Select best file: .bin -> .cube -> .png
+                        val selectedFile = files.find { it.endsWith(".bin", ignoreCase = true) }
+                            ?: files.find { it.endsWith(".cube", ignoreCase = true) }
+                            ?: files.first()
+                            
                         val displayName = if (isLeicaLux) {
                             getLeicaLuxFilterName(context, baseName)
                         } else {
@@ -130,7 +140,7 @@ object LutRepository {
                         }
                         LutItem(
                             name = displayName,
-                            assetPath = "$brandPath/$filename"
+                            assetPath = "$brandPath/$selectedFile"
                         )
                     }.sortedBy { it.name.lowercase() }
                     
@@ -152,25 +162,33 @@ object LutRepository {
                     val categoryPath = "$brandPath/$categoryName"
                     val files = assetManager.list(categoryPath) ?: continue
                     
-                    val lutItems = files
+                    // Group by basename to handle duplicates (prefer .bin > .cube > .png)
+                    val groupedFiles = files
                         .filter { file -> 
                             lutExtensions.any { ext -> file.endsWith(ext, ignoreCase = true) }
                         }
-                        .map { filename ->
-                            val baseName = lutExtensions.fold(filename) { acc, ext -> 
+                        .groupBy { filename ->
+                            lutExtensions.fold(filename) { acc, ext -> 
                                 acc.removeSuffix(ext).removeSuffix(ext.uppercase())
                             }
-                            val displayName = if (isLeicaLux) {
-                                getLeicaLuxFilterName(context, baseName)
-                            } else {
-                                baseName.replace("_", " ")
-                            }
-                            LutItem(
-                                name = displayName,
-                                assetPath = "$categoryPath/$filename"
-                            )
                         }
-                        .sortedBy { it.name.lowercase() }
+
+                    val lutItems = groupedFiles.map { (baseName, variants) ->
+                        // Select best file: .bin -> .cube -> .png
+                        val selectedFile = variants.find { it.endsWith(".bin", ignoreCase = true) }
+                            ?: variants.find { it.endsWith(".cube", ignoreCase = true) }
+                            ?: variants.first()
+
+                        val displayName = if (isLeicaLux) {
+                            getLeicaLuxFilterName(context, baseName)
+                        } else {
+                            baseName.replace("_", " ")
+                        }
+                        LutItem(
+                            name = displayName,
+                            assetPath = "$categoryPath/$selectedFile"
+                        )
+                    }.sortedBy { it.name.lowercase() }
                     
                     if (lutItems.isNotEmpty()) {
                         categories.add(

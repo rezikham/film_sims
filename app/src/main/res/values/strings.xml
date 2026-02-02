@@ -86,4 +86,21 @@
     <string name="lut_greg_williams_sepia_100">Greg Williams セピア 100%</string>
     <string name="lut_leica_standard">ライカ スタンダード</string>
     <string name="lut_leica_chrome">ライカ クローム</string>
+
+    <!-- UI Labels -->
+    <string name="subtitle_film_simulator">フィルムシミュレーター</string>
+    <string name="label_pick_image">画像を選択</string>
+    <string name="desc_pick_image">写真を選んでフィルムシミュレーションを適用</string>
+    <string name="btn_open_gallery">ギャラリーを開く</string>
+    <string name="header_grain">グレイン</string>
+    <string name="label_film_grain">フィルムグレイン</string>
+    <string name="header_camera">カメラ</string>
+    <string name="header_style">スタイル</string>
+    <string name="label_intensity">強度</string>
+    <string name="header_presets">プリセット</string>
+    <string name="title_settings">設定</string>
+    <string name="label_save_folder">保存先フォルダ</string>
+    <string name="btn_change">変更</string>
+    <string name="label_quality">保存品質</string>
+    <string name="btn_close">閉じる</string>
 </resources>

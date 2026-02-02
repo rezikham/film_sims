@@ -86,4 +86,21 @@
     <string name="lut_greg_williams_sepia_100">Greg Williams 세피아 100%</string>
     <string name="lut_leica_standard">Leica Standard</string>
     <string name="lut_leica_chrome">Leica Chrome</string>
+
+    <!-- UI Labels -->
+    <string name="subtitle_film_simulator">필름 시뮬레이터</string>
+    <string name="label_pick_image">이미지 선택</string>
+    <string name="desc_pick_image">사진을 선택하여 필름 시뮬레이션을 적용하세요</string>
+    <string name="btn_open_gallery">갤러리 열기</string>
+    <string name="header_grain">그레인</string>
+    <string name="label_film_grain">필름 그레인</string>
+    <string name="header_camera">카메라</string>
+    <string name="header_style">스타일</string>
+    <string name="label_intensity">강도</string>
+    <string name="header_presets">프리셋</string>
+    <string name="title_settings">설정</string>
+    <string name="label_save_folder">저장 폴더</string>
+    <string name="btn_change">변경</string>
+    <string name="label_quality">품질</string>
+    <string name="btn_close">닫기</string>
 </resources>

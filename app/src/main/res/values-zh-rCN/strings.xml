@@ -86,4 +86,21 @@
     <string name="lut_greg_williams_sepia_100">Greg Williams 怀旧 100%</string>
     <string name="lut_leica_standard">Leica Standard</string>
     <string name="lut_leica_chrome">Leica Chrome</string>
+
+    <!-- UI Labels -->
+    <string name="subtitle_film_simulator">胶片模拟器</string>
+    <string name="label_pick_image">选择图片</string>
+    <string name="desc_pick_image">选择照片以应用胶片模拟</string>
+    <string name="btn_open_gallery">打开图库</string>
+    <string name="header_grain">颗粒</string>
+    <string name="label_film_grain">胶片颗粒</string>
+    <string name="header_camera">相机</string>
+    <string name="header_style">风格</string>
+    <string name="label_intensity">强度</string>
+    <string name="header_presets">预设</string>
+    <string name="title_settings">设置</string>
+    <string name="label_save_folder">保存文件夹</string>
+    <string name="btn_change">更改</string>
+    <string name="label_quality">质量</string>
+    <string name="btn_close">关闭</string>
 </resources>

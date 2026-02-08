@@ -63,6 +63,19 @@
     <string name="category_leica_looks">Leica Looks</string>
     <string name="category_artist_looks">아티스트 룩</string>
     
+    <!-- LUT Categories - Film -->
+    <string name="category_film">Film</string>
+    
+    <!-- LUT Categories - Vivo -->
+    <string name="category_camera_filters">카메라 필터</string>
+    <string name="category_editor_filters">에디터 필터</string>
+    <string name="category_movie">무비</string>
+    <string name="category_portrait_style">인물 스타일</string>
+    <string name="category_portrait_multistyle">인물 멀티스타일</string>
+    <string name="category_collage_filters">콜라주 필터</string>
+    <string name="category_night_style">야경 스타일</string>
+    <string name="category_superzoom">슈퍼줌</string>
+    
     <!-- Brand names -->
     <string name="brand_leica_lux">Leica LUX</string>
     
@@ -86,6 +99,16 @@
     <string name="lut_greg_williams_sepia_100">Greg Williams 세피아 100%</string>
     <string name="lut_leica_standard">Leica Standard</string>
     <string name="lut_leica_chrome">Leica Chrome</string>
+    
+    <!-- Nubia LUT names -->
+    <string name="lut_nubia_landscape">풍경</string>
+    <string name="lut_nubia_food">음식</string>
+    <string name="lut_nubia_portrait_bg">인물 (배경)</string>
+    <string name="lut_nubia_portrait_skin">인물 (피부)</string>
+    <string name="lut_nubia_portrait_skin_2">인물 (피부 2)</string>
+    <string name="lut_nubia_daily">일상</string>
+    <string name="lut_nubia_life_bg">라이프 (배경)</string>
+    <string name="lut_nubia_life_skin">라이프 (피부)</string>
 
     <!-- UI Labels -->
     <string name="subtitle_film_simulator">필름 시뮬레이터</string>

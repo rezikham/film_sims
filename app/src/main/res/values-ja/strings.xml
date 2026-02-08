@@ -66,6 +66,16 @@
     <!-- LUT Categories - Film -->
     <string name="category_film">フィルム</string>
     
+    <!-- LUT Categories - Vivo -->
+    <string name="category_camera_filters">カメラフィルター</string>
+    <string name="category_editor_filters">エディターフィルター</string>
+    <string name="category_movie">ムービー</string>
+    <string name="category_portrait_style">ポートレートスタイル</string>
+    <string name="category_portrait_multistyle">ポートレートマルチスタイル</string>
+    <string name="category_collage_filters">コラージュフィルター</string>
+    <string name="category_night_style">夜景スタイル</string>
+    <string name="category_superzoom">スーパーズーム</string>
+    
     <!-- Film LUT names -->
     <string name="lut_film_field">フィールド</string>
     <string name="lut_film_seaside">海辺</string>
@@ -105,6 +115,16 @@
     <string name="lut_greg_williams_sepia_100">Greg Williams セピア 100%</string>
     <string name="lut_leica_standard">ライカ スタンダード</string>
     <string name="lut_leica_chrome">ライカ クローム</string>
+    
+    <!-- Nubia LUT names -->
+    <string name="lut_nubia_landscape">風景</string>
+    <string name="lut_nubia_food">グルメ</string>
+    <string name="lut_nubia_portrait_bg">人物 (背景)</string>
+    <string name="lut_nubia_portrait_skin">人物 (肌)</string>
+    <string name="lut_nubia_portrait_skin_2">人物 (肌 2)</string>
+    <string name="lut_nubia_daily">デイリー</string>
+    <string name="lut_nubia_life_bg">ライフ (背景)</string>
+    <string name="lut_nubia_life_skin">ライフ (肌)</string>
 
     <!-- UI Labels -->
     <string name="subtitle_film_simulator">フィルムシミュレーター</string>

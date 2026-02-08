@@ -328,12 +328,22 @@ object CubeLUTParser {
             
             android.util.Log.d("CubeLUTParser", "PNG LUT: $assetPath, size: ${width}x${height}")
             
+            // 1D LUT: very short height (1-3 rows), e.g. 256x1
+            if (height in 1..3 && width >= 16) {
+                return parse1DLut(bitmap)
+            }
+            
+            // Strip format: width = lutSize², height = lutSize (e.g. 1024x32, 256x16)
+            if (width > height && height > 0 && width == height * height) {
+                return parseStripLut(bitmap, height)
+            }
+            
             // 512x512 = 64³ in 8x8 grid of 64x64 slices (HALD format)
             if (width == 512 && height == 512) {
                 return parseHaldLut(bitmap, 64)
             }
             
-            // Try other common formats
+            // Try other common formats via detection
             val lutSize = detectLutSize(width, height)
             if (lutSize == null) {
                 android.util.Log.e("CubeLUTParser", "Could not detect LUT size for ${width}x${height}")
@@ -414,23 +424,121 @@ object CubeLUTParser {
         }
     }
 
-    private fun detectLutSize(width: Int, height: Int): Int? {
-        // Common HALD LUT formats
-        return when {
-            width == 512 && height == 512 -> 64   // 8x8 grid of 64x64
-            width == 256 && height == 256 -> 32   // 5.66x5.66 -> likely 32 with some padding
-            width == 1024 && height == 1024 -> 64 // Alternative format
-            width == 4096 && height == 64 -> 64   // Strip format
-            width == 1024 && height == 32 -> 32   // Strip format
-            // Try to infer from dimensions
-            width == height -> {
-                // Square image - try common LUT sizes
-                val sqrtSize = kotlin.math.sqrt(width.toDouble()).toInt()
-                when {
-                    sqrtSize * sqrtSize == width && sqrtSize in listOf(8, 16, 32, 64) -> sqrtSize
-                    width == 512 -> 64  // 512x512 for 64³
-                    else -> null
+    private fun parseStripLut(bitmap: Bitmap, lutSize: Int): CubeLUT? {
+        try {
+            val width = bitmap.width
+            val height = bitmap.height
+            
+            android.util.Log.d("CubeLUTParser", "Strip LUT: lutSize=$lutSize, image=${width}x${height}")
+            
+            val pixels = IntArray(width * height)
+            bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+            bitmap.recycle()
+            
+            val entryCount = lutSize * lutSize * lutSize
+            val floatBuffer = ByteBuffer.allocateDirect(entryCount * 3 * 4)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer()
+            
+            // Strip format: lutSize tiles laid out horizontally, each tile is lutSize x lutSize
+            for (b in 0 until lutSize) {
+                val baseX = b * lutSize
+                for (g in 0 until lutSize) {
+                    val rowOffset = g * width
+                    for (r in 0 until lutSize) {
+                        val pixelX = baseX + r
+                        if (pixelX >= width || g >= height) {
+                            floatBuffer.put(0f)
+                            floatBuffer.put(0f)
+                            floatBuffer.put(0f)
+                            continue
+                        }
+                        val pixel = pixels[rowOffset + pixelX]
+                        val red = ((pixel ushr 16) and 0xFF) * 0.003921569f
+                        val green = ((pixel ushr 8) and 0xFF) * 0.003921569f
+                        val blue = (pixel and 0xFF) * 0.003921569f
+                        floatBuffer.put(red)
+                        floatBuffer.put(green)
+                        floatBuffer.put(blue)
+                    }
                 }
+            }
+            
+            floatBuffer.position(0)
+            android.util.Log.d("CubeLUTParser", "Parsed strip LUT: $entryCount entries")
+            return CubeLUT(lutSize, floatBuffer)
+            
+        } catch (e: Exception) {
+            android.util.Log.e("CubeLUTParser", "Error parsing strip LUT", e)
+            return null
+        }
+    }
+
+    private fun parse1DLut(bitmap: Bitmap): CubeLUT? {
+        try {
+            val width = bitmap.width
+            val height = bitmap.height
+            
+            android.util.Log.d("CubeLUTParser", "1D LUT: image=${width}x${height}")
+            
+            val pixels = IntArray(width * height)
+            bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+            bitmap.recycle()
+            
+            // Read 1D curves from first row
+            val rCurve = FloatArray(width)
+            val gCurve = FloatArray(width)
+            val bCurve = FloatArray(width)
+            for (i in 0 until width) {
+                val pixel = pixels[i]
+                rCurve[i] = ((pixel ushr 16) and 0xFF) / 255f
+                gCurve[i] = ((pixel ushr 8) and 0xFF) / 255f
+                bCurve[i] = (pixel and 0xFF) / 255f
+            }
+            
+            // Build a 3D LUT from independent 1D curves
+            val lutSize = 32
+            val entryCount = lutSize * lutSize * lutSize
+            val floatBuffer = ByteBuffer.allocateDirect(entryCount * 3 * 4)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer()
+            
+            for (b in 0 until lutSize) {
+                val bi = (b * (width - 1) / (lutSize - 1)).coerceIn(0, width - 1)
+                for (g in 0 until lutSize) {
+                    val gi = (g * (width - 1) / (lutSize - 1)).coerceIn(0, width - 1)
+                    for (r in 0 until lutSize) {
+                        val ri = (r * (width - 1) / (lutSize - 1)).coerceIn(0, width - 1)
+                        floatBuffer.put(rCurve[ri])
+                        floatBuffer.put(gCurve[gi])
+                        floatBuffer.put(bCurve[bi])
+                    }
+                }
+            }
+            
+            floatBuffer.position(0)
+            android.util.Log.d("CubeLUTParser", "Parsed 1D LUT as 3D: ${lutSize}³ = $entryCount entries")
+            return CubeLUT(lutSize, floatBuffer)
+            
+        } catch (e: Exception) {
+            android.util.Log.e("CubeLUTParser", "Error parsing 1D LUT", e)
+            return null
+        }
+    }
+
+    private fun detectLutSize(width: Int, height: Int): Int? {
+        return when {
+            // Strip format: width = lutSize², height = lutSize
+            width > height && height > 0 && width == height * height -> height
+            // HALD square format: imageSize = lutSize * sqrt(lutSize)
+            width == height -> {
+                for (size in listOf(64, 36, 25, 16, 9, 4)) {
+                    val sqrtSize = kotlin.math.sqrt(size.toDouble()).toInt()
+                    if (sqrtSize * sqrtSize == size && size * sqrtSize == width) {
+                        return size
+                    }
+                }
+                null
             }
             else -> null
         }

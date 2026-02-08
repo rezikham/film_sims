@@ -63,6 +63,19 @@
     <string name="category_leica_looks">Leica Looks</string>
     <string name="category_artist_looks">Artist Looks</string>
     
+    <!-- LUT Categories - Film -->
+    <string name="category_film">Film</string>
+    
+    <!-- LUT Categories - Vivo -->
+    <string name="category_camera_filters">Camera Filters</string>
+    <string name="category_editor_filters">Editor Filters</string>
+    <string name="category_movie">Movie</string>
+    <string name="category_portrait_style">Portrait Style</string>
+    <string name="category_portrait_multistyle">Portrait Multi-Style</string>
+    <string name="category_collage_filters">Collage Filters</string>
+    <string name="category_night_style">Night Style</string>
+    <string name="category_superzoom">Superzoom</string>
+    
     <!-- Brand names -->
     <string name="brand_leica_lux">Leica LUX</string>
     
@@ -86,6 +99,16 @@
     <string name="lut_greg_williams_sepia_100">Greg Williams Sepia 100%</string>
     <string name="lut_leica_standard">Leica Standard</string>
     <string name="lut_leica_chrome">Leica Chrome</string>
+    
+    <!-- Nubia LUT names -->
+    <string name="lut_nubia_landscape">Landscape</string>
+    <string name="lut_nubia_food">Food</string>
+    <string name="lut_nubia_portrait_bg">Portrait (BG)</string>
+    <string name="lut_nubia_portrait_skin">Portrait (Skin)</string>
+    <string name="lut_nubia_portrait_skin_2">Portrait (Skin 2)</string>
+    <string name="lut_nubia_daily">Daily Life</string>
+    <string name="lut_nubia_life_bg">Life (BG)</string>
+    <string name="lut_nubia_life_skin">Life (Skin)</string>
 
     <!-- UI Labels -->
     <string name="subtitle_film_simulator">Film Simulator</string>

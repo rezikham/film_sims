@@ -58,6 +58,15 @@ object LutRepository {
             "Artist Looks" -> context.getString(R.string.category_artist_looks)
             // Film category
             "Film" -> context.getString(R.string.category_film)
+            // Vivo categories
+            "newfilter" -> context.getString(R.string.category_camera_filters)
+            "editor_filters" -> context.getString(R.string.category_editor_filters)
+            "movielut" -> context.getString(R.string.category_movie)
+            "portraitstylefilter" -> context.getString(R.string.category_portrait_style)
+            "portraitstylefilter_multistyle" -> context.getString(R.string.category_portrait_multistyle)
+            "collage_filters" -> context.getString(R.string.category_collage_filters)
+            "nightstylefilter" -> context.getString(R.string.category_night_style)
+            "superzoom" -> context.getString(R.string.category_superzoom)
             // Common/Nothing
             "_all" -> context.getString(R.string.category_all)
             // Fallback - keep original name for Fujifilm, Kodak Film, etc.
@@ -115,6 +124,56 @@ object LutRepository {
         }
     }
     
+    // Vivo filter filename to display name
+    private fun getVivoFilterName(fileName: String): String {
+        var name = fileName
+        // Strip common prefixes (longer/more specific first)
+        val prefixes = listOf(
+            "special_new_filter_", "special_portrait_",
+            "new_filter_back_photo_hdr_", "new_filter_",
+            "effects_space_filter_",
+            "filter_polaroid_", "filter_portrait_style_", "filter_portrait_",
+            "filter_",
+            "front_filter_portrait_style_",
+            "portrait_back_", "portrait_",
+            "zeiss_star_light_",
+            "pack_film_",
+            "polaroid_",
+            // editor/collage category prefixes
+            "film_", "food_", "fruity_", "human_", "japan_", "night_", "style_"
+        )
+        for (prefix in prefixes) {
+            if (name.startsWith(prefix)) {
+                name = name.removePrefix(prefix)
+                break
+            }
+        }
+        // Handle remaining front_/back_ prefixes
+        if (name.startsWith("front_")) name = name.removePrefix("front_")
+        if (name.startsWith("back_")) name = name.removePrefix("back_")
+        // Strip redundant suffixes
+        name = name.removeSuffix("_lut").removeSuffix("_filter")
+        // Title case
+        return name.replace("_", " ").split(" ").joinToString(" ") { word ->
+            word.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        }
+    }
+    
+    // Nubia filter filename to localized display name
+    private fun getNubiaFilterName(context: Context, fileName: String): String {
+        return when {
+            fileName.startsWith("fengjing") -> context.getString(R.string.lut_nubia_landscape)
+            fileName.startsWith("meishi") -> context.getString(R.string.lut_nubia_food)
+            fileName.startsWith("renxiang") && fileName.contains("bg") -> context.getString(R.string.lut_nubia_portrait_bg)
+            fileName.startsWith("renxiang") && fileName.contains("skin 2") -> context.getString(R.string.lut_nubia_portrait_skin_2)
+            fileName.startsWith("renxiang") && fileName.contains("skin") -> context.getString(R.string.lut_nubia_portrait_skin)
+            fileName.startsWith("richang") -> context.getString(R.string.lut_nubia_daily)
+            fileName.startsWith("shenghuo") && fileName.contains("bg") -> context.getString(R.string.lut_nubia_life_bg)
+            fileName.startsWith("shenghuo") && fileName.contains("skin") -> context.getString(R.string.lut_nubia_life_skin)
+            else -> fileName.replace("_", " ")
+        }
+    }
+    
     fun getLutBrands(context: Context): List<LutBrand> {
         val assetManager = context.assets
         val brands = mutableListOf<LutBrand>()
@@ -129,6 +188,8 @@ object LutRepository {
                 
                 val categories = mutableListOf<LutCategory>()
                 val isLeicaLux = brandName == "Leica_lux"
+                val isVivo = brandName == "Vivo"
+                val isNubia = brandName == "Nubia"
                 
                 // Check if brand has flat structure (LUT files directly in brand folder)
                 val directLutFiles = contents.filter { file -> 
@@ -151,10 +212,11 @@ object LutRepository {
                             ?: files.find { it.endsWith(".cube", ignoreCase = true) }
                             ?: files.first()
                             
-                        val displayName = if (isLeicaLux) {
-                            getLeicaLuxFilterName(context, baseName)
-                        } else {
-                            baseName.replace("_", " ")
+                        val displayName = when {
+                            isLeicaLux -> getLeicaLuxFilterName(context, baseName)
+                            isNubia -> getNubiaFilterName(context, baseName)
+                            isVivo -> getVivoFilterName(baseName)
+                            else -> baseName.replace("_", " ")
                         }
                         LutItem(
                             name = displayName,
@@ -201,6 +263,7 @@ object LutRepository {
                         val displayName = when {
                             isLeicaLux -> getLeicaLuxFilterName(context, baseName)
                             isFilmCategory -> getFilmLutName(context, baseName)
+                            isVivo -> getVivoFilterName(baseName)
                             else -> baseName.replace("_", " ")
                         }
                         LutItem(

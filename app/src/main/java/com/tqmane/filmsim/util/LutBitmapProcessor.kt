@@ -5,15 +5,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
-import java.util.concurrent.Executors
 
 object LutBitmapProcessor {
 
-    // Thread pool for maximum CPU utilization
+    // Use coroutines with Dispatchers.Default for optimal CPU utilization
     private val numCores = Runtime.getRuntime().availableProcessors()
-    private val executor = Executors.newFixedThreadPool(numCores)
 
-    // Ultra-fast parallel LUT application using all CPU cores
+    // Ultra-fast parallel LUT application using coroutines
     suspend fun applyLutToBitmap(source: Bitmap, lut: CubeLUT): Bitmap = withContext(Dispatchers.Default) {
         val width = source.width
         val height = source.height

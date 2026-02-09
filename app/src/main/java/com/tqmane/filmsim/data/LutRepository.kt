@@ -3,6 +3,8 @@ package com.tqmane.filmsim.data
 import android.content.Context
 import android.content.res.AssetManager
 import com.tqmane.filmsim.R
+import org.json.JSONObject
+import java.io.InputStream
 
 data class LutItem(
     val name: String,
@@ -22,9 +24,105 @@ data class LutBrand(
 )
 
 object LutRepository {
-    
+
     // Supported LUT file extensions
     private val lutExtensions = listOf(".cube", ".png", ".bin", ".webp", ".jpg", ".jpeg")
+
+    // Cached mapping data
+    private var categoryMappings: Map<String, String>? = null
+    private var honorMappings: Map<String, String>? = null
+    private var meizuMappings: JSONObject? = null
+    private var leicaLuxMappings: Map<String, String>? = null
+    private var nubiaMappings: Map<String, String>? = null
+    private var filmMappings: Map<String, String>? = null
+
+    // Load JSON from raw resources
+    private fun loadJsonFromRaw(context: Context, resourceId: Int): String {
+        val inputStream: InputStream = context.resources.openRawResource(resourceId)
+        return inputStream.bufferedReader().use { it.readText() }
+    }
+
+    // Get resource ID for raw file
+    private fun getRawResourceId(context: Context, fileName: String): Int {
+        return context.resources.getIdentifier(fileName, "raw", context.packageName)
+    }
+
+    // Initialize and cache all mappings
+    private fun initializeMappings(context: Context) {
+        if (categoryMappings == null) {
+            try {
+                val categoryJson = loadJsonFromRaw(context, getRawResourceId(context, "lut_category_mappings"))
+                categoryMappings = JSONObject(categoryJson).getJSONObject("categories").keys().asSequence()
+                    .associateWith { key ->
+                        JSONObject(categoryJson).getJSONObject("categories").getString(key)
+                    }
+            } catch (e: Exception) {
+                categoryMappings = emptyMap()
+            }
+        }
+
+        if (honorMappings == null) {
+            try {
+                val honorJson = loadJsonFromRaw(context, getRawResourceId(context, "lut_honor_mappings"))
+                honorMappings = JSONObject(honorJson).getJSONObject("filters").keys().asSequence()
+                    .associateWith { key ->
+                        JSONObject(honorJson).getJSONObject("filters").getString(key)
+                    }
+            } catch (e: Exception) {
+                honorMappings = emptyMap()
+            }
+        }
+
+        if (meizuMappings == null) {
+            try {
+                val meizuJson = loadJsonFromRaw(context, getRawResourceId(context, "lut_meizu_mappings"))
+                meizuMappings = JSONObject(meizuJson)
+            } catch (e: Exception) {
+                meizuMappings = JSONObject()
+            }
+        }
+
+        if (leicaLuxMappings == null) {
+            try {
+                val leicaLuxJson = loadJsonFromRaw(context, getRawResourceId(context, "lut_leica_lux_mappings"))
+                leicaLuxMappings = JSONObject(leicaLuxJson).getJSONObject("filters").keys().asSequence()
+                    .associateWith { key ->
+                        JSONObject(leicaLuxJson).getJSONObject("filters").getString(key)
+                    }
+            } catch (e: Exception) {
+                leicaLuxMappings = emptyMap()
+            }
+        }
+
+        if (nubiaMappings == null) {
+            try {
+                val nubiaJson = loadJsonFromRaw(context, getRawResourceId(context, "lut_nubia_mappings"))
+                nubiaMappings = JSONObject(nubiaJson).getJSONObject("filters").keys().asSequence()
+                    .associateWith { key ->
+                        JSONObject(nubiaJson).getJSONObject("filters").getString(key)
+                    }
+            } catch (e: Exception) {
+                nubiaMappings = emptyMap()
+            }
+        }
+
+        if (filmMappings == null) {
+            try {
+                val filmJson = loadJsonFromRaw(context, getRawResourceId(context, "lut_film_mappings"))
+                filmMappings = JSONObject(filmJson).getJSONObject("filters").keys().asSequence()
+                    .associateWith { key ->
+                        JSONObject(filmJson).getJSONObject("filters").getString(key)
+                    }
+            } catch (e: Exception) {
+                filmMappings = emptyMap()
+            }
+        }
+    }
+
+    // Get string resource ID from name
+    private fun getStringResourceId(context: Context, resourceName: String): Int {
+        return context.resources.getIdentifier(resourceName, "string", context.packageName)
+    }
 
     private fun isAssetDirectory(assetManager: AssetManager, assetPath: String): Boolean {
         return try {
@@ -75,140 +173,131 @@ object LutRepository {
     
     // Category name to string resource ID mapping
     private fun getCategoryDisplayName(context: Context, categoryName: String): String {
-        return when (categoryName) {
-            // OnePlus categories
-            "App Filters" -> context.getString(R.string.category_app_filters)
-            "Artistic" -> context.getString(R.string.category_artistic)
-            "Black & White" -> context.getString(R.string.category_black_white)
-            "Cinematic Movie" -> context.getString(R.string.category_cinematic_movie)
-            "Cool Tones" -> context.getString(R.string.category_cool_tones)
-            "Food" -> context.getString(R.string.category_food)
-            "Golden Touch" -> context.getString(R.string.category_golden_touch)
-            "Instagram Filters" -> context.getString(R.string.category_instagram_filters)
-            "Japanese Style" -> context.getString(R.string.category_japanese_style)
-            "Landscape" -> context.getString(R.string.category_landscape)
-            "Night" -> context.getString(R.string.category_night)
-            "Portrait" -> context.getString(R.string.category_portrait)
-            "Uncategorized" -> context.getString(R.string.category_uncategorized)
-            "Vintage-Retro" -> context.getString(R.string.category_vintage_retro)
-            "Warm Tones" -> context.getString(R.string.category_warm_tones)
-            // Xiaomi categories
-            "Cinematic" -> context.getString(R.string.category_cinematic)
-            "Film Simulation" -> context.getString(R.string.category_film_simulation)
-            "Monochrome" -> context.getString(R.string.category_monochrome)
-            "Nature-Landscape" -> context.getString(R.string.category_nature_landscape)
-            "Portrait-Soft" -> context.getString(R.string.category_portrait_soft)
-            "Special Effects" -> context.getString(R.string.category_special_effects)
-            "Vivid-Natural" -> context.getString(R.string.category_vivid_natural)
-            "Warm-Vintage" -> context.getString(R.string.category_warm_vintage)
-            // Leica_lux categories
-            "Leica Looks" -> context.getString(R.string.category_leica_looks)
-            "Artist Looks" -> context.getString(R.string.category_artist_looks)
-            // Film category
-            "Film" -> context.getString(R.string.category_film)
-            // Vivo categories
-            "newfilter" -> context.getString(R.string.category_camera_filters)
-            "editor_filters" -> context.getString(R.string.category_editor_filters)
-            "movielut" -> context.getString(R.string.category_movie)
-            "portraitstylefilter" -> context.getString(R.string.category_portrait_style)
-            "portraitstylefilter_multistyle" -> context.getString(R.string.category_portrait_multistyle)
-            "collage_filters" -> context.getString(R.string.category_collage_filters)
-            "nightstylefilter" -> context.getString(R.string.category_night_style)
-            "superzoom" -> context.getString(R.string.category_superzoom)
-            // Honor categories
-            "luts" -> context.getString(R.string.category_all)
-            // Meizu categories
-            "aiFilters" -> context.getString(R.string.category_ai_filters)
-            "classicFilter" -> context.getString(R.string.category_classic_filter)
-            "filterManager" -> context.getString(R.string.category_filter_manager)
-            "General" -> context.getString(R.string.category_general)
-            // Common/Nothing
-            "_all" -> context.getString(R.string.category_all)
-            // Fallback - keep original name for Fujifilm, Kodak Film, etc.
-            else -> categoryName.replace("_", " ").replace("-", " - ")
+        initializeMappings(context)
+
+        val resourceName = categoryMappings?.get(categoryName)
+        if (resourceName != null) {
+            val resourceId = getStringResourceId(context, resourceName)
+            if (resourceId != 0) {
+                return try {
+                    context.getString(resourceId)
+                } catch (e: Exception) {
+                    categoryName.replace("_", " ").replace("-", " - ")
+                }
+            }
         }
+
+        // Fallback - keep original name for Fujifilm, Kodak Film, etc.
+        return categoryName.replace("_", " ").replace("-", " - ")
     }
     
     // Film folder LUT filename to localized display name
     private fun getFilmLutName(context: Context, fileName: String): String {
-        return when {
-            fileName.contains("field", ignoreCase = true) -> context.getString(R.string.lut_film_field)
-            fileName.contains("seaside", ignoreCase = true) -> context.getString(R.string.lut_film_seaside)
-            fileName.contains("city", ignoreCase = true) -> context.getString(R.string.lut_film_city)
-            fileName.contains("neon", ignoreCase = true) -> context.getString(R.string.lut_film_neon)
-            fileName.contains("cold_flash", ignoreCase = true) -> context.getString(R.string.lut_film_cold_flash)
-            fileName.contains("warm_flash", ignoreCase = true) -> context.getString(R.string.lut_film_warm_flash)
-            fileName.contains("vintage", ignoreCase = true) -> context.getString(R.string.lut_film_vintage)
-            fileName.contains("clear", ignoreCase = true) -> context.getString(R.string.lut_film_clear)
-            fileName.contains("800t", ignoreCase = true) -> context.getString(R.string.lut_film_800t)
-            else -> fileName.replace("_", " ")
+        initializeMappings(context)
+
+        // Check for partial matches in film mappings
+        val mappings = filmMappings ?: emptyMap()
+        for ((key: String, resourceName: String) in mappings.entries) {
+            if (fileName.contains(key, ignoreCase = true)) {
+                val resourceId = getStringResourceId(context, resourceName)
+                if (resourceId != 0) {
+                    return try {
+                        context.getString(resourceId)
+                    } catch (e: Exception) {
+                        fileName.replace("_", " ")
+                    }
+                }
+            }
         }
+
+        return fileName.replace("_", " ")
     }
     
     // Honor filter filename to localized display name
     private fun getHonorFilterName(context: Context, fileName: String): String {
-        return when {
-            fileName.equals("baixi", ignoreCase = true) -> context.getString(R.string.lut_honor_baixi)
-            fileName.equals("fendiao", ignoreCase = true) -> context.getString(R.string.lut_honor_fendiao)
-            fileName.equals("heibai", ignoreCase = true) -> context.getString(R.string.lut_honor_heibai)
-            fileName.equals("heijin", ignoreCase = true) -> context.getString(R.string.lut_honor_heijin)
-            fileName.equals("huaijiu", ignoreCase = true) -> context.getString(R.string.lut_honor_huaijiu)
-            fileName.equals("huidiao", ignoreCase = true) -> context.getString(R.string.lut_honor_huidiao)
-            fileName.equals("jiaotang", ignoreCase = true) -> context.getString(R.string.lut_honor_jiaotang)
-            fileName.equals("jingdian", ignoreCase = true) -> context.getString(R.string.lut_honor_jingdian)
-            fileName.equals("landiao", ignoreCase = true) -> context.getString(R.string.lut_honor_landiao)
-            fileName.equals("qingcheng", ignoreCase = true) -> context.getString(R.string.lut_honor_qingcheng)
-            fileName.equals("senxi", ignoreCase = true) -> context.getString(R.string.lut_honor_senxi)
-            fileName.equals("tangguo", ignoreCase = true) -> context.getString(R.string.lut_honor_tangguo)
-            fileName.equals("yingxiang", ignoreCase = true) -> context.getString(R.string.lut_honor_yingxiang)
-            fileName.equals("zhishi", ignoreCase = true) -> context.getString(R.string.lut_honor_zhishi)
-            fileName.equals("ziran", ignoreCase = true) -> context.getString(R.string.lut_honor_ziran)
-            fileName.startsWith("hn_", ignoreCase = true) -> {
-                val name = fileName.removePrefix("hn_")
-                getHonorFilterName(context, name)
-            }
-            // Fallback: use Chinese filter naming
-            fileName.equals("danya", ignoreCase = true) -> context.getString(R.string.lut_honor_danya)
-            fileName.equals("jiaopian", ignoreCase = true) -> context.getString(R.string.lut_honor_jiaopian)
-            fileName.equals("qingchun", ignoreCase = true) -> context.getString(R.string.lut_honor_qingchun)
-            fileName.equals("rouhe", ignoreCase = true) -> context.getString(R.string.lut_honor_rouhe)
-            fileName.equals("xianming", ignoreCase = true) -> context.getString(R.string.lut_honor_xianming)
-            fileName.equals("xianyan", ignoreCase = true) -> context.getString(R.string.lut_honor_xianyan)
-            fileName.equals("yuanqi", ignoreCase = true) -> context.getString(R.string.lut_honor_yuanqi)
-            else -> fileName.replace("_", " ")
+        initializeMappings(context)
+
+        // Handle hn_ prefix recursively
+        if (fileName.startsWith("hn_", ignoreCase = true)) {
+            val name = fileName.removePrefix("hn_")
+            return getHonorFilterName(context, name)
         }
+
+        // Check for exact match in mappings
+        val resourceName = honorMappings?.get(fileName.lowercase())
+        if (resourceName != null) {
+            val resourceId = getStringResourceId(context, resourceName)
+            if (resourceId != 0) {
+                return try {
+                    context.getString(resourceId)
+                } catch (e: Exception) {
+                    fileName.replace("_", " ")
+                }
+            }
+        }
+
+        return fileName.replace("_", " ")
     }
 
     // Meizu filter filename to localized display name
     private fun getMeizuFilterName(context: Context, fileName: String, categoryName: String): String {
+        initializeMappings(context)
+
         // classicFilter camera_* prefix handling
         if (categoryName == "classicFilter") {
-            return when {
-                fileName.contains("fanchanuan", ignoreCase = true) && fileName.contains("front", ignoreCase = true) -> context.getString(R.string.lut_meizu_warm_front)
-                fileName.contains("fanchanuan", ignoreCase = true) -> context.getString(R.string.lut_meizu_warm)
-                fileName.contains("fanchase", ignoreCase = true) && fileName.contains("front", ignoreCase = true) -> context.getString(R.string.lut_meizu_retro_front)
-                fileName.contains("fanchase", ignoreCase = true) -> context.getString(R.string.lut_meizu_retro)
-                fileName.contains("nense", ignoreCase = true) && fileName.contains("front", ignoreCase = true) -> context.getString(R.string.lut_meizu_tender_front)
-                fileName.contains("nense", ignoreCase = true) -> context.getString(R.string.lut_meizu_tender)
-                fileName.contains("nuanse", ignoreCase = true) && fileName.contains("front", ignoreCase = true) -> context.getString(R.string.lut_meizu_warm_tone_front)
-                fileName.contains("nuanse", ignoreCase = true) -> context.getString(R.string.lut_meizu_warm_tone)
-                fileName.contains("xianming", ignoreCase = true) && fileName.contains("front", ignoreCase = true) -> context.getString(R.string.lut_meizu_vivid_front)
-                fileName.contains("xianming", ignoreCase = true) -> context.getString(R.string.lut_meizu_vivid)
-                fileName.contains("filtertable") -> {
-                    val suffix = fileName.removePrefix("filtertable_rgb_second_")
-                    suffix.replaceFirstChar { it.titlecase() }
-                }
-                else -> fileName.replace("_", " ")
+            // Check for filtertable files
+            if (fileName.contains("filtertable")) {
+                val suffix = fileName.removePrefix("filtertable_rgb_second_")
+                return suffix.replaceFirstChar { it.titlecase() }
             }
+
+            // Check classicFilter mappings
+            val classicFilterJson = meizuMappings?.optJSONObject("classicFilter")
+            if (classicFilterJson != null) {
+                for (key in classicFilterJson.keys()) {
+                    if (fileName.contains(key, ignoreCase = true)) {
+                        val filterInfo = classicFilterJson.getJSONObject(key)
+                        val resourceName = if (fileName.contains("front", ignoreCase = true)) {
+                            filterInfo.optString("front", filterInfo.optString("default"))
+                        } else {
+                            filterInfo.optString("default")
+                        }
+
+                        if (resourceName.isNotEmpty()) {
+                            val resourceId = getStringResourceId(context, resourceName)
+                            if (resourceId != 0) {
+                                return try {
+                                    context.getString(resourceId)
+                                } catch (e: Exception) {
+                                    fileName.replace("_", " ")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return fileName.replace("_", " ")
         }
+
         // General folder
         if (categoryName == "General") {
-            return when {
-                fileName.equals("original512", ignoreCase = true) -> context.getString(R.string.lut_meizu_original)
-                fileName.equals("skinWhiten", ignoreCase = true) -> context.getString(R.string.lut_meizu_skin_whiten)
-                else -> fileName.replaceFirstChar { it.titlecase() }.replace("_", " ")
+            val generalJson = meizuMappings?.optJSONObject("General")
+            if (generalJson != null) {
+                val resourceName = generalJson.optString(fileName.lowercase(), "")
+                if (resourceName.isNotEmpty()) {
+                    val resourceId = getStringResourceId(context, resourceName)
+                    if (resourceId != 0) {
+                        return try {
+                            context.getString(resourceId)
+                        } catch (e: Exception) {
+                            fileName.replaceFirstChar { it.titlecase() }.replace("_", " ")
+                        }
+                    }
+                }
             }
+            return fileName.replaceFirstChar { it.titlecase() }.replace("_", " ")
         }
+
         // aiFilters and filterManager: already have nice names (Bright, Gentle, etc.)
         return fileName.replace("_", " ")
     }
@@ -223,28 +312,24 @@ object LutRepository {
     
     // Leica_lux filter filename to localized display name
     private fun getLeicaLuxFilterName(context: Context, fileName: String): String {
-        return when {
-            fileName.contains("Classic_sRGB") -> context.getString(R.string.lut_leica_classic)
-            fileName.contains("Contemporary_sRGB") -> context.getString(R.string.lut_leica_contemporary)
-            fileName.contains("Leica-Filter_Monochrome") -> context.getString(R.string.lut_leica_monochrome_natural)
-            fileName.contains("Leica-Filter_Natural") -> context.getString(R.string.lut_leica_natural)
-            fileName.contains("Leica-Looks_Blue") -> context.getString(R.string.lut_leica_blue)
-            fileName.contains("Leica-Looks_Eternal") -> context.getString(R.string.lut_leica_eternal)
-            fileName.contains("Leica-Looks_Selenium") -> context.getString(R.string.lut_leica_selenium)
-            fileName.contains("Leica-Looks_Sepia") -> context.getString(R.string.lut_leica_sepia)
-            fileName.contains("Leica-Looks_Silver") -> context.getString(R.string.lut_leica_silver)
-            fileName.contains("Leica-Looks_Teal") -> context.getString(R.string.lut_leica_teal)
-            fileName.contains("Leica_Bleach") -> context.getString(R.string.lut_leica_bleach)
-            fileName.contains("Leica_Brass") -> context.getString(R.string.lut_leica_brass)
-            fileName.contains("Leica_Monochrome_High_Contrast") -> context.getString(R.string.lut_leica_high_contrast)
-            fileName.contains("Leica_Vivid") -> context.getString(R.string.lut_leica_vivid)
-            fileName.contains("Tyson_100yearsMono") -> context.getString(R.string.lut_100_years_mono)
-            fileName.contains("Tyson_GregWilliams_Sepia0") -> context.getString(R.string.lut_greg_williams_sepia_0)
-            fileName.contains("Tyson_GregWilliams_Sepia100") -> context.getString(R.string.lut_greg_williams_sepia_100)
-            fileName.contains("Tyson_Leica_Base_V3") -> context.getString(R.string.lut_leica_standard)
-            fileName.contains("Tyson_Leica_Chrome") -> context.getString(R.string.lut_leica_chrome)
-            else -> fileName.replace("_", " ")
+        initializeMappings(context)
+
+        // Check for partial matches in Leica Lux mappings
+        val mappings = leicaLuxMappings ?: emptyMap()
+        for ((key: String, resourceName: String) in mappings.entries) {
+            if (fileName.contains(key, ignoreCase = true)) {
+                val resourceId = getStringResourceId(context, resourceName)
+                if (resourceId != 0) {
+                    return try {
+                        context.getString(resourceId)
+                    } catch (e: Exception) {
+                        fileName.replace("_", " ")
+                    }
+                }
+            }
         }
+
+        return fileName.replace("_", " ")
     }
     
     // Vivo filter filename to display name
@@ -284,17 +369,73 @@ object LutRepository {
     
     // Nubia filter filename to localized display name
     private fun getNubiaFilterName(context: Context, fileName: String): String {
-        return when {
-            fileName.startsWith("fengjing") -> context.getString(R.string.lut_nubia_landscape)
-            fileName.startsWith("meishi") -> context.getString(R.string.lut_nubia_food)
-            fileName.startsWith("renxiang") && fileName.contains("bg") -> context.getString(R.string.lut_nubia_portrait_bg)
-            fileName.startsWith("renxiang") && fileName.contains("skin 2") -> context.getString(R.string.lut_nubia_portrait_skin_2)
-            fileName.startsWith("renxiang") && fileName.contains("skin") -> context.getString(R.string.lut_nubia_portrait_skin)
-            fileName.startsWith("richang") -> context.getString(R.string.lut_nubia_daily)
-            fileName.startsWith("shenghuo") && fileName.contains("bg") -> context.getString(R.string.lut_nubia_life_bg)
-            fileName.startsWith("shenghuo") && fileName.contains("skin") -> context.getString(R.string.lut_nubia_life_skin)
-            else -> fileName.replace("_", " ")
+        initializeMappings(context)
+
+        // Check for matches in Nubia mappings
+        // Handle special cases with conditions
+        if (fileName.startsWith("renxiang", ignoreCase = true)) {
+            return when {
+                fileName.contains("skin 2", ignoreCase = true) -> {
+                    val resourceName = nubiaMappings?.get("renxiang_skin_2")
+                    getResourceString(context, resourceName, fileName)
+                }
+                fileName.contains("skin", ignoreCase = true) -> {
+                    val resourceName = nubiaMappings?.get("renxiang_skin")
+                    getResourceString(context, resourceName, fileName)
+                }
+                fileName.contains("bg", ignoreCase = true) -> {
+                    val resourceName = nubiaMappings?.get("renxiang_bg")
+                    getResourceString(context, resourceName, fileName)
+                }
+                else -> fileName.replace("_", " ")
+            }
         }
+
+        if (fileName.startsWith("shenghuo", ignoreCase = true)) {
+            return when {
+                fileName.contains("skin", ignoreCase = true) -> {
+                    val resourceName = nubiaMappings?.get("shenghuo_skin")
+                    getResourceString(context, resourceName, fileName)
+                }
+                fileName.contains("bg", ignoreCase = true) -> {
+                    val resourceName = nubiaMappings?.get("shenghuo_bg")
+                    getResourceString(context, resourceName, fileName)
+                }
+                else -> fileName.replace("_", " ")
+            }
+        }
+
+        // Check for prefix matches
+        val mappings = nubiaMappings ?: emptyMap()
+        for ((key: String, resourceName: String) in mappings.entries) {
+            if (fileName.startsWith(key, ignoreCase = true)) {
+                val resourceId = getStringResourceId(context, resourceName)
+                if (resourceId != 0) {
+                    return try {
+                        context.getString(resourceId)
+                    } catch (e: Exception) {
+                        fileName.replace("_", " ")
+                    }
+                }
+            }
+        }
+
+        return fileName.replace("_", " ")
+    }
+
+    // Helper function to get resource string with fallback
+    private fun getResourceString(context: Context, resourceName: String?, fallback: String): String {
+        if (resourceName != null) {
+            val resourceId = getStringResourceId(context, resourceName)
+            if (resourceId != 0) {
+                return try {
+                    context.getString(resourceId)
+                } catch (e: Exception) {
+                    fallback.replace("_", " ")
+                }
+            }
+        }
+        return fallback.replace("_", " ")
     }
     
     fun getLutBrands(context: Context): List<LutBrand> {

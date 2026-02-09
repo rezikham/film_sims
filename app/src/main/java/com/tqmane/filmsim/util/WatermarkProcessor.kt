@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.Typeface
+import com.tqmane.filmsim.R
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -49,7 +50,7 @@ object WatermarkProcessor {
     private fun getHonorTypeface(context: Context): Typeface {
         honorTypeface?.let { return it }
         return try {
-            Typeface.createFromAsset(context.assets, "fonts/HONORSansVFCN.ttf").also {
+            Typeface.createFromAsset(context.assets, context.getString(R.string.honor_font_path)).also {
                 honorTypeface = it
             }
         } catch (e: Exception) {

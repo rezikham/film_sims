@@ -1,5 +1,6 @@
 package com.tqmane.filmsim.util
 
+import android.app.ActivityManager
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -14,19 +15,44 @@ import kotlin.math.pow
 data class CubeLUT(val size: Int, val data: FloatBuffer)
 
 object CubeLUTParser {
-    // Cache parsed LUTs to avoid repeatedly parsing large files when user switches filters.
-    // Sized in KB; 16MB keeps several 64^3 LUTs without blowing memory.
-    private val lutCache = object : LruCache<String, CubeLUT>(16 * 1024) {
-        override fun sizeOf(key: String, value: CubeLUT): Int {
-            // Approximate native buffer bytes: size^3 * 3 * 4
-            val bytes = value.size * value.size * value.size * 3 * 4
-            return (bytes / 1024).coerceAtLeast(1)
+    private var lutCache: LruCache<String, CubeLUT>? = null
+
+    private fun getCacheSizeKb(context: Context): Int {
+        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+            ?: return 16 * 1024
+
+        // getMemoryClass returns the memory class in MB
+        val memoryClassMb = activityManager.memoryClass
+
+        // Use 1/8th of available memory for LUT cache, but at least 8MB and at most 64MB
+        // This is a reasonable heuristic to balance cache hits vs memory pressure
+        val cacheSizeMb = when {
+            memoryClassMb <= 64 -> memoryClassMb / 8
+            memoryClassMb <= 128 -> 16
+            memoryClassMb <= 256 -> 24
+            else -> 32
+        }.coerceIn(8, 64)
+
+        android.util.Log.d("CubeLUTParser", "Device memory class: ${memoryClassMb}MB, Cache size: ${cacheSizeMb}MB")
+        return cacheSizeMb * 1024
+    }
+
+    private fun getOrCreateCache(context: Context): LruCache<String, CubeLUT> {
+        return lutCache ?: synchronized(this) {
+            lutCache ?: object : LruCache<String, CubeLUT>(getCacheSizeKb(context)) {
+                override fun sizeOf(key: String, value: CubeLUT): Int {
+                    // Approximate native buffer bytes: size^3 * 3 * 4
+                    val bytes = value.size * value.size * value.size * 3 * 4
+                    return (bytes / 1024).coerceAtLeast(1)
+                }
+            }.also { lutCache = it }
         }
     }
 
     fun parse(context: Context, assetPath: String): CubeLUT? {
-        synchronized(lutCache) {
-            lutCache.get(assetPath)?.let { cached ->
+        val cache = getOrCreateCache(context)
+        synchronized(cache) {
+            cache.get(assetPath)?.let { cached ->
                 cached.data.position(0)
                 return cached
             }
@@ -51,8 +77,8 @@ object CubeLUTParser {
 
         if (parsed != null) {
             parsed.data.position(0)
-            synchronized(lutCache) {
-                lutCache.put(assetPath, parsed)
+            synchronized(cache) {
+                cache.put(assetPath, parsed)
             }
         }
 

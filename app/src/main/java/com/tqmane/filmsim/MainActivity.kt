@@ -248,15 +248,15 @@ class MainActivity : ComponentActivity() {
                         updateWatermarkPreview()
                     }
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MainActivity, getString(R.string.image_load_failed, e.message ?: ""), Toast.LENGTH_SHORT).show()
-                }
             } catch (e: OutOfMemoryError) {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@MainActivity, getString(R.string.image_load_failed, "Out of memory"), Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@MainActivity, getString(R.string.image_load_failed, e.message ?: ""), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -863,29 +863,30 @@ class MainActivity : ComponentActivity() {
     
     private fun toggleAdjustmentPanel() {
         isAdjustmentPanelExpanded = !isAdjustmentPanelExpanded
-        
+        val animationDuration = resources.getInteger(R.integer.animation_duration_default).toLong()
+
         if (isAdjustmentPanelExpanded) {
             sliderPanel.visibility = View.VISIBLE
             sliderPanel.alpha = 0f
             sliderPanel.animate()
                 .alpha(1f)
-                .setDuration(200)
+                .setDuration(animationDuration)
                 .start()
             adjustmentToggle.animate()
                 .rotation(0f)
-                .setDuration(200)
+                .setDuration(animationDuration)
                 .start()
         } else {
             sliderPanel.animate()
                 .alpha(0f)
-                .setDuration(200)
+                .setDuration(animationDuration)
                 .withEndAction {
                     sliderPanel.visibility = View.GONE
                 }
                 .start()
             adjustmentToggle.animate()
                 .rotation(180f)
-                .setDuration(200)
+                .setDuration(animationDuration)
                 .start()
         }
     }
@@ -911,8 +912,8 @@ class MainActivity : ComponentActivity() {
     
     private fun toggleImmersiveMode() {
         isImmersiveMode = !isImmersiveMode
-        val duration = 200L
-        
+        val duration = resources.getInteger(R.integer.animation_duration_immersive).toLong()
+
         if (isImmersiveMode) {
             // Store heights before hiding
             val topBarHeight = topBar.height.toFloat()
@@ -1102,27 +1103,28 @@ class MainActivity : ComponentActivity() {
             if (!hasSelectedLut) {
                 hasSelectedLut = true
                 isAdjustmentPanelExpanded = true
+                val animationDuration = resources.getInteger(R.integer.animation_duration_default).toLong()
 
                 // First LUT selection starts at 100%
                 quickIntensitySlider.progress = 100
                 quickIntensityValue.text = "100%"
                 currentIntensity = 1f
                 prefs.edit().putFloat("last_intensity", currentIntensity).apply()
-                
+
                 adjustmentHeader.visibility = View.VISIBLE
                 adjustmentHeader.alpha = 0f
                 adjustmentHeader.animate()
                     .alpha(1f)
-                    .setDuration(200)
+                    .setDuration(animationDuration)
                     .start()
-                
+
                 sliderPanel.visibility = View.VISIBLE
                 sliderPanel.alpha = 0f
                 sliderPanel.animate()
                     .alpha(1f)
-                    .setDuration(200)
+                    .setDuration(animationDuration)
                     .start()
-                    
+
                 adjustmentToggle.rotation = 0f
             }
 
@@ -1167,11 +1169,12 @@ class MainActivity : ComponentActivity() {
                 // Show quick intensity panel
                 withContext(Dispatchers.Main) {
                     if (quickIntensityPanel.visibility != View.VISIBLE) {
+                        val animationDuration = resources.getInteger(R.integer.animation_duration_default).toLong()
                         quickIntensityPanel.visibility = View.VISIBLE
                         quickIntensityPanel.alpha = 0f
                         quickIntensityPanel.animate()
                             .alpha(1f)
-                            .setDuration(200)
+                            .setDuration(animationDuration)
                             .start()
                     }
                 }
@@ -1423,8 +1426,8 @@ class MainActivity : ComponentActivity() {
         if (::glSurfaceView.isInitialized) {
             glSurfaceView.queueEvent {
                 gpuExportRenderer?.release()
-                gpuExportRenderer = null
             }
         }
+        gpuExportRenderer = null
     }
 }

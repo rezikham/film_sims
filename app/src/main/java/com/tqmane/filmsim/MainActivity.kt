@@ -14,6 +14,7 @@ import android.graphics.Paint
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.view.animation.OvershootInterpolator
 import android.provider.MediaStore
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
@@ -339,7 +340,7 @@ class MainActivity : ComponentActivity() {
         setupViews()
         setupLutList()
         createDefaultThumbnail()
-        
+
         // Check for updates
         checkForUpdates()
     }
@@ -577,14 +578,19 @@ class MainActivity : ComponentActivity() {
         btnPick.setOnClickListener {
             pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
+        // Enhance ripple effect
+        btnPick.rippleColor = ColorStateList.valueOf(getColor(R.color.accent_primary))
 
         // Change photo button (ImageButton in top bar)
-        findViewById<ImageButton>(R.id.btnChangePhoto)?.setOnClickListener {
+        val btnChangePhoto = findViewById<ImageButton>(R.id.btnChangePhoto)
+        btnChangePhoto?.setOnClickListener {
             pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
 
         // Save button (MaterialButton in top bar)
         val btnSave = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSave)
+        // Enhance ripple effect
+        btnSave.rippleColor = ColorStateList.valueOf(getColor(R.color.accent_primary))
         btnSave.setOnClickListener {
             if (originalBitmap == null) {
                 Toast.makeText(this, getString(R.string.select_image_first), Toast.LENGTH_SHORT).show()
@@ -1019,7 +1025,7 @@ class MainActivity : ComponentActivity() {
         btnClose.setOnClickListener {
             dialog.dismiss()
         }
-        
+
         dialog.show()
     }
     
@@ -1104,6 +1110,7 @@ class MainActivity : ComponentActivity() {
                 hasSelectedLut = true
                 isAdjustmentPanelExpanded = true
                 val animationDuration = resources.getInteger(R.integer.animation_duration_default).toLong()
+                val bounceInterpolator = OvershootInterpolator(0.8f)
 
                 // First LUT selection starts at 100%
                 quickIntensitySlider.progress = 100
@@ -1113,16 +1120,26 @@ class MainActivity : ComponentActivity() {
 
                 adjustmentHeader.visibility = View.VISIBLE
                 adjustmentHeader.alpha = 0f
+                adjustmentHeader.scaleX = 0.95f
+                adjustmentHeader.scaleY = 0.95f
                 adjustmentHeader.animate()
                     .alpha(1f)
+                    .scaleX(1f)
+                    .scaleY(1f)
                     .setDuration(animationDuration)
+                    .setInterpolator(bounceInterpolator)
                     .start()
 
                 sliderPanel.visibility = View.VISIBLE
                 sliderPanel.alpha = 0f
+                sliderPanel.scaleX = 0.95f
+                sliderPanel.scaleY = 0.95f
                 sliderPanel.animate()
                     .alpha(1f)
+                    .scaleX(1f)
+                    .scaleY(1f)
                     .setDuration(animationDuration)
+                    .setInterpolator(bounceInterpolator)
                     .start()
 
                 adjustmentToggle.rotation = 0f
@@ -1170,11 +1187,17 @@ class MainActivity : ComponentActivity() {
                 withContext(Dispatchers.Main) {
                     if (quickIntensityPanel.visibility != View.VISIBLE) {
                         val animationDuration = resources.getInteger(R.integer.animation_duration_default).toLong()
+                        val bounceInterpolator = OvershootInterpolator(0.8f)
                         quickIntensityPanel.visibility = View.VISIBLE
                         quickIntensityPanel.alpha = 0f
+                        quickIntensityPanel.scaleX = 0.95f
+                        quickIntensityPanel.scaleY = 0.95f
                         quickIntensityPanel.animate()
                             .alpha(1f)
+                            .scaleX(1f)
+                            .scaleY(1f)
                             .setDuration(animationDuration)
+                            .setInterpolator(bounceInterpolator)
                             .start()
                     }
                 }

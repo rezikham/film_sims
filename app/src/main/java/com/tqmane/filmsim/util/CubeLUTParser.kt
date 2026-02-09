@@ -476,33 +476,67 @@ object CubeLUTParser {
             bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
             bitmap.recycle()
             
+            // Auto-detect axis convention by sampling the end of row 0 in tile 0.
+            // Standard (Vivo etc.): tile=B, X=R, Y=G → px[0, lutSize-1] has dominant Red
+            // Meizu classicFilter: tile=G, X=B, Y=R → px[0, lutSize-1] has dominant Blue
+            val samplePixel = pixels[lutSize - 1] // px[row=0, col=lutSize-1]
+            val sR = (samplePixel ushr 16) and 0xFF
+            val sG = (samplePixel ushr 8) and 0xFF
+            val sB = samplePixel and 0xFF
+            val isMeizuConvention = sB > sR && sB > sG
+            
+            android.util.Log.d("CubeLUTParser", "Strip axis detect: sample=($sR,$sG,$sB) meizu=$isMeizuConvention")
+            
             val entryCount = lutSize * lutSize * lutSize
             val floatBuffer = ByteBuffer.allocateDirect(entryCount * 3 * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer()
             
-            // Strip format: lutSize tiles laid out horizontally, each tile is lutSize x lutSize
-            // Meizu convention: Tile = Green, X within tile = Blue, Y (row) = Red
             // OpenGL 3D texture expects data in order: R (fastest), G, B (slowest)
-            for (b in 0 until lutSize) {
-                for (g in 0 until lutSize) {
-                    for (r in 0 until lutSize) {
-                        // Tile index = Green axis, offset within tile = Blue axis, row = Red axis
-                        val pixelX = g * lutSize + b
-                        val pixelY = r
-                        if (pixelX >= width || pixelY >= height) {
-                            floatBuffer.put(0f)
-                            floatBuffer.put(0f)
-                            floatBuffer.put(0f)
-                            continue
+            if (isMeizuConvention) {
+                // Meizu convention: Tile index = Green, X within tile = Blue, Y (row) = Red
+                for (b in 0 until lutSize) {
+                    for (g in 0 until lutSize) {
+                        for (r in 0 until lutSize) {
+                            val pixelX = g * lutSize + b
+                            val pixelY = r
+                            if (pixelX >= width || pixelY >= height) {
+                                floatBuffer.put(0f)
+                                floatBuffer.put(0f)
+                                floatBuffer.put(0f)
+                                continue
+                            }
+                            val pixel = pixels[pixelY * width + pixelX]
+                            val red = ((pixel ushr 16) and 0xFF) * 0.003921569f
+                            val green = ((pixel ushr 8) and 0xFF) * 0.003921569f
+                            val blue = (pixel and 0xFF) * 0.003921569f
+                            floatBuffer.put(red)
+                            floatBuffer.put(green)
+                            floatBuffer.put(blue)
                         }
-                        val pixel = pixels[pixelY * width + pixelX]
-                        val red = ((pixel ushr 16) and 0xFF) * 0.003921569f
-                        val green = ((pixel ushr 8) and 0xFF) * 0.003921569f
-                        val blue = (pixel and 0xFF) * 0.003921569f
-                        floatBuffer.put(red)
-                        floatBuffer.put(green)
-                        floatBuffer.put(blue)
+                    }
+                }
+            } else {
+                // Standard convention: Tile index = Blue, X within tile = Red, Y (row) = Green
+                for (b in 0 until lutSize) {
+                    for (g in 0 until lutSize) {
+                        for (r in 0 until lutSize) {
+                            val pixelX = b * lutSize + r
+                            val pixelY = g
+                            if (pixelX >= width || pixelY >= height) {
+                                floatBuffer.put(0f)
+                                floatBuffer.put(0f)
+                                floatBuffer.put(0f)
+                                continue
+                            }
+                            val pixel = pixels[pixelY * width + pixelX]
+                            val red = ((pixel ushr 16) and 0xFF) * 0.003921569f
+                            val green = ((pixel ushr 8) and 0xFF) * 0.003921569f
+                            val blue = (pixel and 0xFF) * 0.003921569f
+                            floatBuffer.put(red)
+                            floatBuffer.put(green)
+                            floatBuffer.put(blue)
+                        }
                     }
                 }
             }
